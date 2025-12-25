@@ -421,6 +421,71 @@ You can use multiple `@unblaze` blocks in a single component:
 
 Each `@unblaze` block creates an independent dynamic section, while everything else remains folded.
 
+## Preventing folding with Blaze::abort()
+
+Sometimes you have a component that's mostly static but needs to prevent Blaze from folding it under certain conditions. The `Blaze::abort()` method lets you conditionally disable folding and memoization based on runtime logic within your component.
+
+### When to use Blaze::abort()
+
+Use `Blaze::abort()` when:
+- Your component is mostly static and benefits from optimization
+- But under certain conditions (based on props or other logic), it needs dynamic behavior
+- You want to keep one component instead of splitting into separate static/dynamic versions
+
+### Example: Avatar component
+
+Consider an avatar component that handles two different use cases:
+
+```blade
+{{-- resources/views/components/avatar.blade.php --}}
+
+@blaze
+
+@props(['src' => null, 'name' => null])
+
+@php
+    // If we have a name prop, we need dynamic logic for initials and colors
+    if ($name) {
+        Blaze::abort();
+    }
+@endphp
+
+@if($src)
+    {{-- Simple image case - can be folded when only src is provided --}}
+    <img src="{{ $src }}" class="avatar" alt="Avatar">
+@else
+    {{-- Dynamic initials case - requires runtime processing --}}
+    @php
+        $initials = collect(explode(' ', $name))->map(fn($word) => strtoupper($word[0]))->join('');
+        $color = 'bg-' . collect(['blue', 'green', 'purple', 'red'])->get(crc32($name) % 4);
+    @endphp
+    
+    <div class="avatar {{ $color }} flex items-center justify-center">
+        {{ $initials }}
+    </div>
+@endif
+```
+
+**How it works:**
+- When called with just `src`: `<x-avatar src="/user.jpg" />` → Component gets folded for maximum performance
+- When called with `name`: `<x-avatar name="John Doe" />` → `Blaze::abort()` prevents folding, allowing the initials/color logic to run
+
+### What Blaze::abort() does
+
+When `Blaze::abort()` is called during component rendering:
+
+1. **Stops folding** - Blaze immediately stops trying to fold the current component
+2. **Disables memoization** - The component won't be cached either  
+3. **Renders normally** - Falls back to standard Blade rendering with full dynamic capability
+
+This gives you fine-grained control over when optimization should be skipped, keeping your component logic in one place while still getting performance benefits when possible.
+
+### Best practices
+
+- **Call early** - Place `Blaze::abort()` at the top of your component logic, right after determining the condition
+- **Use sparingly** - Only use when you truly need conditional optimization; consider `@unblaze` for simpler cases
+- **Document the condition** - Add a comment explaining when and why the component aborts folding
+
 ## Performance expectations
 
 While our benchmark shows up to 17x improvement for rendering thousands of components, real-world gains are more nuanced:

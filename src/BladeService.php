@@ -49,6 +49,8 @@ class BladeService
         ]);
 
         try {
+            app('blaze')->setRendering(true);
+
             // As we are rendering a string, Blade will generate a view for the string in the cache directory
             // and it doesn't use the `cachePath` property. Instead it uses the config `view.compiled` path
             // to store the view. Hence why our `temporaryCachePath` won't clean this file up. To remove
@@ -59,6 +61,8 @@ class BladeService
         } finally {
             $restore();
             $restoreFactory();
+
+            app('blaze')->setRendering(false);
         }
 
         return $result;

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void disable()
  * @method static bool isEnabled()
  * @method static bool isDisabled()
+ * @method static void abort()
  * @method static \Livewire\Blaze\Tokenizer\Tokenizer tokenizer()
  * @method static \Livewire\Blaze\Parser\Parser parser()
  * @method static \Livewire\Blaze\Folder\Folder folder()

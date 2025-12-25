@@ -8,10 +8,12 @@ use Livewire\Blaze\Support\AttributeParser;
 use Livewire\Blaze\Events\ComponentFolded;
 use Livewire\Blaze\Nodes\ComponentNode;
 use Illuminate\Support\Facades\Event;
+use Illuminate\View\ViewException;
 use Livewire\Blaze\Nodes\TextNode;
 use Livewire\Blaze\Nodes\SlotNode;
 use Livewire\Blaze\Nodes\Node;
 use Livewire\Blaze\Directive\BlazeDirective;
+use Livewire\Blaze\Exceptions\BlazeAbortedException;
 
 class Folder
 {
@@ -125,6 +127,8 @@ class Folder
         } catch (InvalidBlazeFoldUsageException $e) {
             throw $e;
         } catch (\Exception $e) {
+            $this->throwIfAborted($e);
+
             if (app('blaze')->isDebugging()) {
                 throw $e;
             }
@@ -276,5 +280,20 @@ class Folder
         }
 
         return implode(', ', $parts);
+    }
+
+    protected function throwIfAborted(\Exception $exception): void
+    {
+        while ($exception instanceof ViewException) {
+            if (($previous = $exception->getPrevious()) === null) {
+                return;
+            }
+
+            $exception = $previous;
+        }
+
+        if ($exception instanceof BlazeAbortedException) {
+            throw $exception;
+        }
     }
 }

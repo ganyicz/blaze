@@ -260,4 +260,9 @@ BLADE;
 
         expect(compile($input))->toBe($output);
     });
+
+    it('can abort fold', function () {
+        expect(compile('<x-abort />'))->toBe('<x-abort />');
+        expect(compile('<x-abort-nested />'))->toBe('<x-abort-nested />');
+    });
 });

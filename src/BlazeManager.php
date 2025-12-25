@@ -10,12 +10,15 @@ use Livewire\Blaze\Memoizer\Memoizer;
 use Livewire\Blaze\Walker\Walker;
 use Livewire\Blaze\Parser\Parser;
 use Livewire\Blaze\Folder\Folder;
+use Livewire\Blaze\Exceptions\BlazeAbortedException;
 
 class BlazeManager
 {
     protected $foldedEvents = [];
 
     protected $enabled = true;
+
+    protected $rendering = false;
 
     protected $debug = false;
 
@@ -109,7 +112,11 @@ class BlazeManager
                     array_pop($dataStack);
                 }
 
-                return $this->memoizer->memoize($this->folder->fold($node));
+                try {
+                    return $this->memoizer->memoize($this->folder->fold($node));
+                } catch (BlazeAbortedException) {
+                    return $node;
+                }
             },
         );
 
@@ -123,6 +130,11 @@ class BlazeManager
     public function render(array $nodes): string
     {
         return implode('', array_map(fn ($n) => $n->render(), $nodes));
+    }
+
+    public function abort()
+    {
+        throw_if($this->isRendering(), new BlazeAbortedException);
     }
 
     public function isEnabled()
@@ -143,6 +155,16 @@ class BlazeManager
     public function disable()
     {
         $this->enabled = false;
+    }
+
+    public function isRendering()
+    {
+        return $this->rendering;
+    }
+
+    public function setRendering(bool $rendering)
+    {
+        $this->rendering = $rendering;
     }
 
     public function debug()
